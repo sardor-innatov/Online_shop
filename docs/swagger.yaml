@@ -1,0 +1,569 @@
+basePath: /api/v1
+definitions:
+  dto.BalanceUpdateDto:
+    properties:
+      amaunt:
+        type: number
+    type: object
+  dto.CardCreateDto:
+    properties:
+      name:
+        type: string
+      number:
+        type: string
+      paymentSystem:
+        type: string
+    type: object
+  dto.CategoryCreateDto:
+    properties:
+      name:
+        type: string
+    type: object
+  dto.LogInDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.OrderCreateDto:
+    properties:
+      cardId:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItemCreateDto'
+        type: array
+    type: object
+  dto.OrderItemCreateDto:
+    properties:
+      productId:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  dto.ProductCreateDto:
+    properties:
+      categoryId:
+        format: int64
+        type: integer
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        format: float32
+        type: number
+      stock:
+        type: integer
+    type: object
+  dto.RoleCreateDto:
+    properties:
+      permissions:
+        $ref: '#/definitions/helper.JsonObject'
+      roleName:
+        type: string
+    type: object
+  dto.SignUpDto:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.UserUpdateDto:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+    type: object
+  helper.JsonObject:
+    additionalProperties: {}
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Online-Shop API
+  version: "1.0"
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: auth
+        in: body
+        name: auth
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SignUpDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: sign up
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: auth
+        in: body
+        name: auth
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LogInDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: login
+      tags:
+      - auth
+  /card:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: card
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CardCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: create
+      tags:
+      - card
+  /card/balance/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: card
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BalanceUpdateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: udpate balance
+      tags:
+      - card
+  /category:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: page
+        format: int64
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: size
+        format: int64
+        in: query
+        name: size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: get pages of category
+      tags:
+      - category
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: category
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CategoryCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: create
+      tags:
+      - category
+  /category/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - ApiKeyAuth: []
+      summary: delete
+      tags:
+      - category
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: category
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CategoryCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: update
+      tags:
+      - category
+  /order:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: order
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: create
+      tags:
+      - order
+  /product:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: page
+        format: int64
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: size
+        format: int64
+        in: query
+        name: size
+        required: true
+        type: integer
+      - description: categoryId
+        format: int64
+        in: query
+        name: categoryId
+        type: integer
+      - description: minPrice
+        format: float32
+        in: query
+        name: minPrice
+        type: number
+      - description: maxPrice
+        format: float32
+        in: query
+        name: maxPrice
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: get pages of product
+      tags:
+      - product
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProductCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: create
+      tags:
+      - product
+  /product/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - ApiKeyAuth: []
+      summary: delete
+      tags:
+      - product
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: get product by id
+      tags:
+      - product
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProductCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: update
+      tags:
+      - product
+  /product/stock/{id}:
+    put:
+      consumes:
+      - application/json
+      description: write possitive intagers to add items, and negative intager to
+        decrease quantity of items
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: quantity
+        in: query
+        name: quantity
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: update quantity of items
+      tags:
+      - product
+  /role:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RoleCreateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: create
+      tags:
+      - role
+  /user:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: page
+        format: int64
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: size
+        format: int64
+        in: query
+        name: size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: get pages of user
+      tags:
+      - user
+  /user/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - ApiKeyAuth: []
+      summary: delete
+      tags:
+      - user
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: get user by id
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: user
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserUpdateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: update
+      tags:
+      - user
+securityDefinitions:
+  ApiKeyAuth:
+    description: 'Введите токен в формате: Bearer <your_token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
