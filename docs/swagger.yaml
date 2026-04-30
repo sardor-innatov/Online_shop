@@ -7,16 +7,26 @@ definitions:
     type: object
   dto.CardCreateDto:
     properties:
+      last4:
+        type: string
       name:
         type: string
-      number:
-        type: string
       paymentSystem:
+        type: string
+      stripeCustomerId:
+        type: string
+      stripeMethodId:
         type: string
     type: object
   dto.CategoryCreateDto:
     properties:
       name:
+        type: string
+    type: object
+  dto.InitiateSetupRequestDto:
+    properties:
+      email:
+        description: Нужно Stripe для создания Customer, если его нет
         type: string
     type: object
   dto.LogInDto:
@@ -42,19 +52,38 @@ definitions:
       quantity:
         type: integer
     type: object
+  dto.PaymentRequest:
+    properties:
+      amount:
+        description: Сумма в МИНИМАЛЬНЫХ единицах (центах/копейках)
+        format: float64
+        type: number
+      currency:
+        description: '"usd", "eur"'
+        type: string
+      orderId:
+        description: Для метаданных в Stripe (чтобы потом найти заказ)
+        type: string
+      paymentMethodId:
+        description: pm_...
+        type: string
+      stripeCustomerId:
+        description: cus_...
+        type: string
+      userId:
+        type: string
+    type: object
   dto.ProductCreateDto:
     properties:
       categoryId:
-        format: int64
         type: integer
       description:
         type: string
       name:
         type: string
       price:
-        format: float32
         type: number
-      stock:
+      stocke:
         type: integer
     type: object
   dto.RoleCreateDto:
@@ -179,6 +208,27 @@ paths:
       summary: udpate balance
       tags:
       - card
+  /card/setupinitiate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: card
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InitiateSetupRequestDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: setup initiate
+      tags:
+      - card
   /category:
     get:
       consumes:
@@ -292,6 +342,27 @@ paths:
       summary: create
       tags:
       - order
+  /payment/webhook:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: payment
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: webhook
+      tags:
+      - payment
   /product:
     get:
       consumes:

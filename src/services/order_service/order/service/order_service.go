@@ -10,14 +10,17 @@ import (
 	"online_shop/src/services/order_service/order/model"
 	"online_shop/src/services/order_service/order/repository"
 	card_repository "online_shop/src/services/payment_service/card/repository"
+	payment_dto "online_shop/src/services/payment_service/payment/dto"
+	payment_service "online_shop/src/services/payment_service/payment/service"
 	product_repository "online_shop/src/services/product_service/product/repository"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type OrderService interface {
-	Create(ctx route.Context) (int64, error)
+	Create(ctx route.Context) (*payment_dto.PaymentResponse, error)
 }
 
 type orderService struct {
@@ -25,6 +28,7 @@ type orderService struct {
 	card_repo    card_repository.CardRepository
 	order_repo   repository.OrderRepository
 	product_repo product_repository.ProductRepository
+	payment      payment_service.PaymentService
 }
 
 func NewOrderService(conn *pgxpool.Pool) OrderService {
@@ -33,10 +37,11 @@ func NewOrderService(conn *pgxpool.Pool) OrderService {
 		card_repo:    card_repository.NewCardRepository(conn),
 		order_repo:   repository.NewOrderRepository(conn),
 		product_repo: product_repository.NewProductRepository(conn),
+		payment:      payment_service.NewPaymentService(),
 	}
 }
 
-func (s *orderService) Create(ctx route.Context) (int64, error) {
+func (s *orderService) Create(ctx route.Context) (*payment_dto.PaymentResponse, error) {
 
 	var order dto.OrderCreateDto
 	err := ctx.Bind(&order)
@@ -50,7 +55,8 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 	userId, ok := val.(int64)
 	{
 		if !ok {
-			return 0, ctx.JSON(http.StatusBadRequest, map[string]any{"error": "invalid user id type in context"})
+			ctx.JSON(http.StatusBadRequest, map[string]any{"error": "invalid user id type in context"})
+			return nil, errors.New("invalid user id type in context")
 		}
 	}
 	// check if card registered
@@ -59,7 +65,7 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 	{
 		if card == nil && err == nil {
 			ctx.JSON(http.StatusNotFound, map[string]any{"error": "card not found"})
-			return 0, sql.ErrNoRows
+			return nil, sql.ErrNoRows
 		} else if err != nil {
 			ctx.JSON(http.StatusInternalServerError, map[string]any{"error": "failed to SELECT card"})
 			panic("failed to SELECT card")
@@ -68,7 +74,7 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 
 	if card.UserId != userId {
 		ctx.JSON(http.StatusNotFound, map[string]any{"error": "card not found"})
-		return 0, nil // need error
+		return nil, nil // need error
 	}
 
 	// check products existense
@@ -81,22 +87,22 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 	{
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return 0, err
+			return nil, err
 		} else if !ok {
 			ctx.JSON(http.StatusNotFound, map[string]any{"error": "items not found"})
-			return 0, sql.ErrNoRows
+			return nil, sql.ErrNoRows
 		}
 	}
 
 	// decrease stack
-	c, cancel := context.WithTimeout(context.Background(), time.Millisecond*700)
+	c, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
 	defer cancel()
 
 	tx, err := s.conn.Begin(c)
 	{
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return 0, err
+			return nil, err
 		}
 	}
 
@@ -107,7 +113,7 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 		if err != nil {
 			tx.Rollback(c)
 			ctx.JSON(http.StatusBadRequest, map[string]any{"error": "not enough items in stock"})
-			return 0, err
+			return nil, err
 		}
 	}
 
@@ -123,7 +129,7 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 	{
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, map[string]any{"error": err.Error()})
-			return 0, err
+			return nil, err
 		}
 	}
 	id, err := s.order_repo.Insert(tx, &orderModel, orderItemsWithPrice, ctx)
@@ -131,27 +137,38 @@ func (s *orderService) Create(ctx route.Context) (int64, error) {
 		if err != nil {
 			tx.Rollback(c)
 			ctx.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return 0, err
+			return nil, err
 		}
 	}
 
 	// get payment
-	ok = s.card_repo.PayOrder(*card, totalPrice)
+
+	paymentRequest := payment_dto.PaymentRequest{
+		UserId:           strconv.FormatInt(userId, 10),
+		Amount:           totalPrice,
+		Currency:         "usd",
+		StripeCustomerId: card.StripeCustomerId,
+		PaymentMethodId:  card.StripeMethodId,
+		OrderId:          strconv.FormatInt(id, 10),
+	}
+
+	resp, err := s.payment.PayOrder(paymentRequest)
 	{
-		if !ok {
+		if err != nil {
 			tx.Rollback(c)
-			ctx.JSON(http.StatusBadRequest, map[string]any{"error": "lack of pounds"})
-			return 0, errors.New("lack of pounds")
+			ctx.JSON(http.StatusBadRequest, map[string]any{"error": "Payment failed: " + err.Error()})
+			return nil, err
 		}
 	}
+
 	//
 	err = tx.Commit(c)
 	{
 		if err != nil {
 			tx.Rollback(c)
 			ctx.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
-			return 0, err
+			return nil, err
 		}
 	}
-	return id, nil
+	return resp, nil
 }

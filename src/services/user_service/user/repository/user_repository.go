@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +20,7 @@ type UserRepository interface {
 	SelectOne(id int64, c route.Context) (*model.User, error)
 	SelectByEmail(email string, c route.Context) (*model.User, error)
 	SelectWithPage(skip int64, take int64, c route.Context) ([]model.User, error)
+	GetFirstRole(userId int64, c route.Context) (string, error)
 }
 
 type userRepository struct {
@@ -180,4 +183,28 @@ func (r *userRepository) SelectWithPage(skip int64, take int64, c route.Context)
 	}
 
 	return users, nil
+}
+
+func (r *userRepository) GetFirstRole(userId int64, c route.Context) (string, error) {
+
+	query := `
+	SELECT roles.role_name FROM user_roles
+	JOIN roles ON user_roles.role_id = roles.id
+	WHERE user_roles.user_id = $1
+	LIMIT 1`
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Millisecond*500)
+	defer cancel()
+
+	var roleName string
+	err := r.conn.QueryRow(ctx, query, userId).Scan(&roleName)
+	{
+		if errors.Is(err, sql.ErrNoRows) {
+			return "user", err
+		} else if err != nil {
+			return "", err
+		}
+	}
+
+	return roleName, nil
 }

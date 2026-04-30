@@ -91,17 +91,17 @@ func (s *authService) Login(ctx route.Context) (string, error) {
 		}
 	}
 
-	// // getting role
+	// getting role
 
-	// role, err := a.user.GetFirstRole(ctx, id)
-	// {
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	role, err := s.repo.GetFirstRole(user.Id, ctx)
+	{
+		if err != nil {
+			return "", err
+		}
+	}
 	tokenModel := jwt.TokenCreateModel{
 		Id:   user.Id,
-		Role: "",
+		Role: role,
 	}
 
 	token, err := jwt.GenerateToken(tokenModel)

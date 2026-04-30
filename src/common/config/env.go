@@ -35,6 +35,8 @@ type EnvProject struct {
 	JwtSecret  string `env:"JWT_SECRET"`
 	JwtExpire  int64  `env:"JWT_EXPIRE"`
 	JwtRefresh int64  `env:"JWT_REFRESH"`
+
+	StripeSecretKey string `env:"STRIPE_SECRET_KEY"`
 }
 
 type Config struct {

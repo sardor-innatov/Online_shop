@@ -5,7 +5,7 @@ import "time"
 type Order struct {
 	Id         int64
 	UserId     int64
-	TotalPrice float32
+	TotalPrice float64
 	Status     orderStatus
 	CreatedAt  time.Time
 }

@@ -25,6 +25,7 @@ func NewCardHandler(group route.Group, conn *pgxpool.Pool) {
 	{
 		cardGroup.Handle("POST", "", handler.Create)
 		cardGroup.Handle("PUT", "/balance/{id}", handler.UpdateBalance)
+		cardGroup.Handle("POST", "/setupinitiate", handler.SetupInitiate)
 	}
 }
 
@@ -73,4 +74,27 @@ func (h *cardHandler) UpdateBalance(ctx route.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, map[string]any{})
+}
+
+// @Summary      setup initiate
+// @Tags         card
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        card   body	dto.InitiateSetupRequestDto   true  "card"
+// @Success      200  {object}  nil
+// @Failed       400  {object}  error
+// @Failed       404  {object}  error
+// @Failed       500  {object}  error
+// @Router       /card/setupinitiate [POST]
+func (h *cardHandler) SetupInitiate(ctx route.Context) error {
+
+	dto, err := h.service.SetupInitiate(ctx)
+	{
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, map[string]any{"data": dto})
 }

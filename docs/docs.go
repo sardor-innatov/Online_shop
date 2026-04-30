@@ -153,6 +153,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/card/setupinitiate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "card"
+                ],
+                "summary": "setup initiate",
+                "parameters": [
+                    {
+                        "description": "card",
+                        "name": "card",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.InitiateSetupRequestDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/category": {
             "get": {
                 "consumes": [
@@ -323,6 +358,41 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/dto.OrderCreateDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/payment/webhook": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "webhook",
+                "parameters": [
+                    {
+                        "description": "payment",
+                        "name": "payment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PaymentRequest"
                         }
                     }
                 ],
@@ -765,13 +835,19 @@ const docTemplate = `{
         "dto.CardCreateDto": {
             "type": "object",
             "properties": {
+                "last4": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
-                "number": {
+                "paymentSystem": {
                     "type": "string"
                 },
-                "paymentSystem": {
+                "stripeCustomerId": {
+                    "type": "string"
+                },
+                "stripeMethodId": {
                     "type": "string"
                 }
             }
@@ -780,6 +856,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.InitiateSetupRequestDto": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Нужно Stripe для создания Customer, если его нет",
                     "type": "string"
                 }
             }
@@ -820,12 +905,40 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PaymentRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "Сумма в МИНИМАЛЬНЫХ единицах (центах/копейках)",
+                    "type": "number",
+                    "format": "float64"
+                },
+                "currency": {
+                    "description": "\"usd\", \"eur\"",
+                    "type": "string"
+                },
+                "orderId": {
+                    "description": "Для метаданных в Stripe (чтобы потом найти заказ)",
+                    "type": "string"
+                },
+                "paymentMethodId": {
+                    "description": "pm_...",
+                    "type": "string"
+                },
+                "stripeCustomerId": {
+                    "description": "cus_...",
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ProductCreateDto": {
             "type": "object",
             "properties": {
                 "categoryId": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string"
@@ -834,10 +947,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "price": {
-                    "type": "number",
-                    "format": "float32"
+                    "type": "number"
                 },
-                "stock": {
+                "stocke": {
                     "type": "integer"
                 }
             }

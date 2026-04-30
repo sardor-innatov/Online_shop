@@ -59,7 +59,7 @@ func CheckPermission(conn *pgxpool.Pool) route.Middleware {
 			}
 
 			jsonValue, _ := json.Marshal(permission)
-			log.Println(jsonValue)
+			log.Println(jsonValue, permission)
 			ok, err := checkPermission(conn, role.(string), jsonValue)
 			{
 				if err != nil {
@@ -81,7 +81,7 @@ func checkPermission(conn *pgxpool.Pool, role string, perrmission []byte) (bool,
 
 	query := `
 	SELECT COUNT(id) FROM roles
-	WHERE role_name = $1 AND permissions @> @$2 
+	WHERE role_name = $1 AND permissions @> $2::jsonb
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)

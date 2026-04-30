@@ -23,7 +23,7 @@ type ProductRepository interface {
 	SelectOneWithCategoryName(id int64, c route.Context) (*dto.ProductGetDto, error)
 	SelectWithPage(skip, take, categoryId int64, priceMin, priceMax float32, c route.Context) ([]dto.ProductGetDto, error)
 	CheckProducts(ids []int64, c route.Context) (bool, error)
-	UpdateStockItems(tx pgx.Tx, items []order_dto.OrderItemCreateDto, c route.Context) (float32, error)
+	UpdateStockItems(tx pgx.Tx, items []order_dto.OrderItemCreateDto, c route.Context) (float64, error)
 	GetItemsWithPrices(items []order_dto.OrderItemCreateDto, c route.Context) ([]order_model.OrderItem, error)
 }
 
@@ -277,7 +277,7 @@ func (r *productRepository) CheckProducts(ids []int64, c route.Context) (bool, e
 // 	return nil
 // }
 
-func (r *productRepository) UpdateStockItems(tx pgx.Tx, items []order_dto.OrderItemCreateDto, c route.Context) (float32, error) {
+func (r *productRepository) UpdateStockItems(tx pgx.Tx, items []order_dto.OrderItemCreateDto, c route.Context) (float64, error) {
 	query := `
 	WITH order_data AS (
     SELECT 
@@ -315,10 +315,10 @@ func (r *productRepository) UpdateStockItems(tx pgx.Tx, items []order_dto.OrderI
 		qty = append(qty, item.Quantity)
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Millisecond*500)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Millisecond*1000)
 	defer cancel()
 
-	var totalPrice float32
+	var totalPrice float64
 	err := tx.QueryRow(ctx, query, ids, qty).Scan(&totalPrice)
 	{
 		if err != nil {
